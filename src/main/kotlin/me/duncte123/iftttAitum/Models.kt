@@ -19,14 +19,33 @@
 
 package me.duncte123.iftttAitum
 
-val receivedTriggers = mutableMapOf<String, TriggerData>()
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import java.time.LocalDateTime
+import java.util.*
 
+val jackson = ObjectMapper()
 
-fun retrieveNewTriggers(limit: Int): List<TriggerData> {
-    val triggerData = receivedTriggers.values.take(limit)
+class InsertTriggerRequest(
+    val identifier: String,
+    val userData: String?
+)
 
-    triggerData.map(TriggerData::identifier)
-        .forEach(receivedTriggers::remove)
+class TriggerData(
+    @JsonProperty("trigger_identifier") var identifier: String,
+    @JsonProperty("user_data") var userData: String,
+    @JsonProperty("created_at") var createdAt: LocalDateTime,
+    @JsonProperty var meta: MetaData? = null
+) {
+    fun toJson(): JsonNode {
+        val bytes = jackson.writeValueAsBytes(this)
 
-    return triggerData
+        return jackson.readTree(bytes)
+    }
 }
+
+class MetaData(
+    val id: String = UUID.randomUUID().toString(),
+    val timestamp: Long = System.currentTimeMillis() / 1000
+)

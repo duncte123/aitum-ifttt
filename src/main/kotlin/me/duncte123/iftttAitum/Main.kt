@@ -19,23 +19,23 @@
 
 package me.duncte123.iftttAitum
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.*
-import io.javalin.http.HttpResponseException
-import io.javalin.http.UnauthorizedResponse
-import io.javalin.http.bodyValidator
+import io.javalin.http.*
 import me.duncte123.iftttAitum.ifttt.TestData
 import me.duncte123.iftttAitum.ifttt.TriggerRequestBody
+import java.time.LocalDateTime
 
+// TODO:
+//  - Set up database (sqlite)
+//  - Figure out how to use ingredients
 fun main() {
     val app = Javalin.create().start(8080)
 
     app.exception(HttpResponseException::class.java) { ex, ctx ->
         ctx.status(ex.status)
 
-        val jackson = ObjectMapper()
         val obj = jackson.createObjectNode()
         val errArr = jackson.createArrayNode()
 
@@ -50,24 +50,53 @@ fun main() {
     }
 
     app.routes {
+        post("insert-trigger") { ctx ->
+            val trig = ctx.bodyValidator<InsertTriggerRequest>()
+                .check(
+                    "identifier",
+                    { it.identifier != null && it.identifier.length > 10 },
+                    "identifier must be set and longer than 10 chars"
+                )
+                .check(
+                    "userData",
+                    { it.userData == null || it.userData.isNotBlank() },
+                    "User data must not be empty if set"
+                )
+                .get()
+
+            val data = TriggerData(
+                trig.identifier,
+                trig.userData ?: "",
+                LocalDateTime.now(),
+                MetaData()
+            )
+
+            receivedTriggers[data.identifier] = data
+
+            ctx.status(HttpStatus.CREATED)
+        }
         path("v1/ifttt") {
             before { ctx ->
                 val key = ctx.header("IFTTT-Service-Key")
 
-                if (key != System.getenv("SERVICE_KEY")) {
+                if (key != System.getenv("IFTTT_SERVICE_KEY")) {
                     throw UnauthorizedResponse("Channel/Service key is not correct")
                 }
             }
             get("status") { ctx ->
-                ctx.status(200)
+                ctx.status(HttpStatus.OK)
             }
             post("test/setup") { ctx ->
                 ctx.json(TestData())
             }
             // eg app_trigger
             path("triggers/{trigger}") {
-                get { it.status(200) }
+                get { it.status(HttpStatus.OK) }
                 post { ctx ->
+                    if (ctx.pathParam("trigger") != "app_trigger") {
+                        throw NotFoundResponse()
+                    }
+
                     val body = ctx.bodyValidator<TriggerRequestBody>().get()
                     var limit = body.limit
 
@@ -75,13 +104,12 @@ fun main() {
                         limit = 3
                     }
 
-
-                    val jackson = ObjectMapper()
                     val data = jackson.createObjectNode()
                     val dataArr = jackson.createArrayNode()
 
                     if (limit > 0) {
-                        // TODO: fetch data
+                        retrieveNewTriggers(limit)
+                            .forEach { dataArr.add(it.toJson()) }
                     }
 
                     data.set<ObjectNode>("data", dataArr)

@@ -17,16 +17,10 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.duncte123.iftttAitum
+package me.duncte123.iftttAitum.ifttt
 
-val receivedTriggers = mutableMapOf<String, TriggerData>()
-
-
-fun retrieveNewTriggers(limit: Int): List<TriggerData> {
-    val triggerData = receivedTriggers.values.take(limit)
-
-    triggerData.map(TriggerData::identifier)
-        .forEach(receivedTriggers::remove)
-
-    return triggerData
+object IFTTTApi {
+    fun sendDataUpdate() {
+        //
+    }
 }
