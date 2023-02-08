@@ -30,6 +30,7 @@ import java.time.LocalDateTime
 // TODO:
 //  - Set up database (sqlite)
 //  - Figure out how to use ingredients
+//  - Map user identifiers to received trigger_identity so we can send out real-time updates
 fun main() {
     val app = Javalin.create().start(8080)
 
@@ -75,7 +76,7 @@ fun main() {
 
             ctx.status(HttpStatus.CREATED)
         }
-        path("v1/ifttt") {
+        path("ifttt/v1") {
             before { ctx ->
                 val key = ctx.header("IFTTT-Service-Key")
 
