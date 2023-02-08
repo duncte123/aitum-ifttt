@@ -19,5 +19,3 @@ jobs:
           context: ./
           push: false
           tags: ghcr.io/${{ github.repository_owner }}/aitum-ifttt:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
