@@ -55,7 +55,7 @@ fun main() {
     }
 
     app.exception(ValidationException::class.java) { ex, ctx ->
-        ctx.status(HttpStatus.UNPROCESSABLE_CONTENT)
+        ctx.status(HttpStatus.BAD_REQUEST)
 
         val obj = jackson.createObjectNode()
         val errArr = jackson.createArrayNode()
@@ -129,6 +129,24 @@ fun main() {
 
                 insertTrigger(dbData)
 
+                val dbData2 = TriggerData(
+                    testData.samples.triggers.app_trigger.trigger_identifier,
+                    "I like trains",
+                    LocalDateTime.now(),
+                    MetaData()
+                )
+
+                insertTrigger(dbData2)
+
+                val dbData3 = TriggerData(
+                    testData.samples.triggers.app_trigger.trigger_identifier,
+                    """{"cheese": true}""",
+                    LocalDateTime.now(),
+                    MetaData()
+                )
+
+                insertTrigger(dbData3)
+
                 ctx.json(mapOf(
                     "data" to testData
                 ))
@@ -143,14 +161,15 @@ fun main() {
                         throw NotFoundResponse()
                     }
 
+                    println(ctx.body())
+
                     val body = ctx.bodyValidator<TriggerRequestBody>().get()
                     val identity = body.trigger_identity
+                    val userIdentifier = body.triggerFields["trigger_identifier"] ?: throw BadRequestResponse("Missing identifier")
 
-                    println(body.triggerFields)
-
-                    /*if (identity != null) {
-                        insertIdentityIfMissing(identity, "idk")
-                    }*/
+                    if (identity != null) {
+                        insertIdentityIfMissing(identity, userIdentifier)
+                    }
 
                     var limit = body.limit
 
@@ -158,7 +177,7 @@ fun main() {
                         limit = 3
                     }
 
-                    val sendData = if (limit <= 0) listOf() else retrieveNewTriggers(limit, identity)
+                    val sendData = if (limit <= 0) listOf() else retrieveNewTriggers(limit)
 
                     ctx.json(mapOf(
                         "data" to sendData

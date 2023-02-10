@@ -68,22 +68,14 @@ fun insertTrigger(triggerData: TriggerData) {
     triggers.insertOne(triggerData)
 }
 
-fun retrieveNewTriggers(limit: Int, identity: String? = null, delete: Boolean = true): List<TriggerData> {
+fun retrieveNewTriggers(limit: Int, delete: Boolean = true): List<TriggerData> {
     val triggers = mongoDb.getCollection("triggers", TriggerData::class.java)
-
-    val foundTriggers = if (identity.isNullOrBlank()) {
-        triggers.find()
-    } else {
-        triggers.find(
-            filterIn("meta.triggerIdentity", identity)
-        )
-    }.limit(limit)
-
+    val foundTriggers = triggers.find().limit(limit)
     val collected = foundTriggers.toList()
 
     if (delete) {
         triggers.deleteMany(filterIn(
-            "meta.id", foundTriggers.map { it.meta!!.id }
+            "meta._id", collected.map { it.meta!!.id }
         ))
     }
 
