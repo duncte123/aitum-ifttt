@@ -136,7 +136,7 @@ fun main() {
             // eg app_trigger
             path("triggers/{trigger}") {
                 get { it.json(
-                    retrieveNewTriggers(50, delete = false)
+                    retrieveNewTriggers(50, delete = true)
                 ) }
                 post { ctx ->
                     if (ctx.pathParam("trigger") != "app_trigger") {
