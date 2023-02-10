@@ -21,6 +21,7 @@
 
 package me.duncte123.iftttAitum.ifttt
 
+
 class TestData {
     val samples = Samples()
 

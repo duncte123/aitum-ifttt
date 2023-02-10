@@ -19,4 +19,11 @@
 
 package me.duncte123.iftttAitum.ifttt
 
-class TriggerRequestBody(val limit: Int?)
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class TriggerRequestBody(
+    val trigger_identity: String?,
+    val triggerFields: Map<String, String>,
+    val limit: Int?
+)

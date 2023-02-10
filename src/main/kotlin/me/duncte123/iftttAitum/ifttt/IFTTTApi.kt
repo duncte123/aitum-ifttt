@@ -20,7 +20,7 @@
 package me.duncte123.iftttAitum.ifttt
 
 object IFTTTApi {
-    fun sendDataUpdate() {
+    fun sendDataUpdate(identity: String) {
         //
     }
 }

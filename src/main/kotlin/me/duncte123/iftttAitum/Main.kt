@@ -19,20 +19,24 @@
 
 package me.duncte123.iftttAitum
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.*
+import io.javalin.validation.ValidationException
+import me.duncte123.iftttAitum.ifttt.IFTTTApi
 import me.duncte123.iftttAitum.ifttt.TestData
 import me.duncte123.iftttAitum.ifttt.TriggerRequestBody
 import java.time.LocalDateTime
 
 // TODO:
-//  - Set up database (sqlite)
 //  - Figure out how to use ingredients
 //  - Map user identifiers to received trigger_identity so we can send out real-time updates
 fun main() {
-    val app = Javalin.create().start(8080)
+    val app = Javalin.create { config ->
+        //
+    }.start(8080)
 
     app.exception(HttpResponseException::class.java) { ex, ctx ->
         ctx.status(ex.status)
@@ -50,7 +54,27 @@ fun main() {
         ctx.json(obj)
     }
 
+    app.exception(ValidationException::class.java) { ex, ctx ->
+        ctx.status(HttpStatus.UNPROCESSABLE_CONTENT)
+
+        val obj = jackson.createObjectNode()
+        val errArr = jackson.createArrayNode()
+
+        ex.errors.forEach { (key, errors) ->
+            errArr.add(
+                jackson.createObjectNode()
+                    .put("message", "$key is invalid")
+                    .putPOJO("errors", errors)
+            )
+        }
+
+        obj.set<ObjectNode>("errors", errArr)
+
+        ctx.json(obj)
+    }
+
     app.routes {
+        // TODO: authentication
         post("insert-trigger") { ctx ->
             val trig = ctx.bodyValidator<InsertTriggerRequest>()
                 .check(
@@ -72,7 +96,13 @@ fun main() {
                 MetaData()
             )
 
-            receivedTriggers[data.identifier] = data
+            insertTrigger(data)
+
+            val identity = findTriggerIdentityFromId(trig.identifier)
+
+            if (identity != null) {
+                IFTTTApi.sendDataUpdate(identity)
+            }
 
             ctx.status(HttpStatus.CREATED)
         }
@@ -88,33 +118,49 @@ fun main() {
                 ctx.status(HttpStatus.OK)
             }
             post("test/setup") { ctx ->
-                ctx.json(TestData())
+                val testData = TestData()
+
+                val dbData = TriggerData(
+                    testData.samples.triggers.app_trigger.trigger_identifier,
+                    "",
+                    LocalDateTime.now(),
+                    MetaData()
+                )
+
+                insertTrigger(dbData)
+
+                ctx.json(testData)
             }
             // eg app_trigger
             path("triggers/{trigger}") {
-                get { it.status(HttpStatus.OK) }
+                get { it.json(
+                    retrieveNewTriggers(50, delete = false)
+                ) }
                 post { ctx ->
                     if (ctx.pathParam("trigger") != "app_trigger") {
                         throw NotFoundResponse()
                     }
 
                     val body = ctx.bodyValidator<TriggerRequestBody>().get()
+                    val identity = body.trigger_identity
+
+                    println(body.triggerFields)
+
+                    /*if (identity != null) {
+                        insertIdentityIfMissing(identity, "idk")
+                    }*/
+
                     var limit = body.limit
 
                     if (limit == null || limit < 0) {
-                        limit = 3
+                        limit = 50
                     }
 
-                    val data = jackson.createObjectNode()
-                    val dataArr = jackson.createArrayNode()
+                    val sendData = if (limit <= 0) listOf() else retrieveNewTriggers(limit, identity)
 
-                    if (limit > 0) {
-                        retrieveNewTriggers(limit)
-                            .forEach { dataArr.add(it.toJson()) }
-                    }
-
-                    data.set<ObjectNode>("data", dataArr)
-                    ctx.json(data)
+                    ctx.json(mapOf(
+                        "data" to sendData
+                    ))
                 }
             }
         }

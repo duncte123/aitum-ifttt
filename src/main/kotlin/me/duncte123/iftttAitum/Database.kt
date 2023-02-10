@@ -19,14 +19,84 @@
 
 package me.duncte123.iftttAitum
 
-val receivedTriggers = mutableMapOf<String, TriggerData>()
+import com.mongodb.MongoClientSettings.getDefaultCodecRegistry
+import com.mongodb.client.MongoClients
+import com.mongodb.client.MongoDatabase
+import com.mongodb.client.model.Filters.and
+import com.mongodb.client.model.Filters.eq
+import org.bson.Document
+import com.mongodb.client.model.Filters.`in` as filterIn
+import org.bson.codecs.configuration.CodecRegistries.fromProviders
+import org.bson.codecs.configuration.CodecRegistries.fromRegistries
+import org.bson.codecs.pojo.PojoCodecProvider
+
+// I want to be lazy so mongo it is
+val mongoDb = createMongo()
+
+fun findTriggerIdentityFromId(userIdentifier: String): String? {
+    val links = mongoDb.getCollection("identity_links")
+
+    val found = links.find(
+        eq("identifier", userIdentifier)
+    ).firstOrNull()
+
+    return found?.getString("identity")
+}
+
+fun insertIdentityIfMissing(identity: String, userIdentifier: String) {
+    val links = mongoDb.getCollection("identity_links")
+
+    val foundLinks = links.find(and(
+        eq("identifier", userIdentifier),
+        eq("identity", identity)
+    ))
+
+    // isEmpty does not exist????
+    @Suppress("ReplaceSizeZeroCheckWithIsEmpty")
+    if (foundLinks.count() < 1){
+        links.insertOne(
+            Document()
+                .append("identifier", userIdentifier)
+                .append("identity", identity)
+        )
+    }
+}
+
+fun insertTrigger(triggerData: TriggerData) {
+    val triggers = mongoDb.getCollection("triggers", TriggerData::class.java)
+
+    triggers.insertOne(triggerData)
+}
+
+fun retrieveNewTriggers(limit: Int, identity: String? = null, delete: Boolean = true): List<TriggerData> {
+    val triggers = mongoDb.getCollection("triggers", TriggerData::class.java)
+
+    val foundTriggers = if (identity.isNullOrBlank()) {
+        triggers.find()
+    } else {
+        triggers.find(
+            filterIn("meta.triggerIdentity", identity)
+        )
+    }.limit(limit)
+
+    val collected = foundTriggers.toList()
+
+    if (delete) {
+        triggers.deleteMany(filterIn(
+            "meta.id", foundTriggers.map { it.meta!!.id }
+        ))
+    }
+
+    return collected
+}
 
 
-fun retrieveNewTriggers(limit: Int): List<TriggerData> {
-    val triggerData = receivedTriggers.values.take(limit)
+fun createMongo(): MongoDatabase {
+    val pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build()
+    val pojoCodecRegistry = fromRegistries(getDefaultCodecRegistry(), fromProviders(pojoCodecProvider))
 
-    triggerData.map(TriggerData::identifier)
-        .forEach(receivedTriggers::remove)
+    // TODO: env vars
+    val mongoClient = MongoClients.create(System.getenv("MONGO_URI"))
 
-    return triggerData
+    return mongoClient.getDatabase("aitum_ifttt").withCodecRegistry(pojoCodecRegistry)
 }
