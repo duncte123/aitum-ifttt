@@ -31,13 +31,13 @@ class TestData {
 
         // TODO: user_data
         class Triggers {
-            val app_trigger = AppTrigger("FirstTriggerTestEver-v2")
+            val app_trigger = AppTrigger("TEST_FirstTriggerTestEver-v2")
 
             class AppTrigger(val trigger_identifier: String)
         }
 
         class TriggerFieldValidations {
-            val app_trigger = AppTriggerValidation("FirstTriggerTestEver-v2", "test${System.currentTimeMillis()}test")
+            val app_trigger = AppTriggerValidation("TEST_FirstTriggerTestEver-v2", "test${System.currentTimeMillis()}test")
 
             class AppTriggerValidation(val valid: String, val invalid: String)
         }

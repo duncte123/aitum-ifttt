@@ -30,7 +30,7 @@ import me.duncte123.iftttAitum.ifttt.TriggerRequestBody
 import java.time.LocalDateTime
 
 fun createEnoughTestItems(testData: TestData) {
-    (0..3).forEach { _ ->
+    (0..1).forEach { _ ->
         val dbData = TriggerData(
             testData.samples.triggers.app_trigger.trigger_identifier,
             "",
@@ -59,14 +59,14 @@ fun createEnoughTestItems(testData: TestData) {
         insertTrigger(dbData3)
     }
 
-    val finaltrigger = TriggerData(
+    /*val finaltrigger = TriggerData(
         testData.samples.triggers.app_trigger.trigger_identifier,
         """{"final_trigger": true}""",
         LocalDateTime.now(),
         MetaData()
     )
 
-    insertTrigger(finaltrigger)
+    insertTrigger(finaltrigger)*/
 }
 
 // TODO:
@@ -166,7 +166,7 @@ fun main() {
             // eg app_trigger
             path("triggers/{trigger}") {
                 get { it.json(
-                    retrieveNewTriggers(50, delete = true)
+                    retrieveNewTriggers(50, delete = false)
                 ) }
                 post { ctx ->
                     if (ctx.pathParam("trigger") != "app_trigger") {
