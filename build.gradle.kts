@@ -1,5 +1,8 @@
 plugins {
+    application
+
     kotlin("jvm") version "1.8.0"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 group = "me.duncte123"
@@ -17,6 +20,15 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.0")
     implementation("org.slf4j:slf4j-simple:2.0.3")
     implementation("io.javalin:javalin:5.3.2")
+}
+
+application {
+    mainClass.set("me.duncte123.iftttAitum.MainKt")
+}
+
+tasks.shadowJar {
+    archiveBaseName.set("aitum-ifttt")
+    archiveClassifier.set("prod")
 }
 
 tasks.test {

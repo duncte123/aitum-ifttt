@@ -153,7 +153,7 @@ fun main() {
                     var limit = body.limit
 
                     if (limit == null || limit < 0) {
-                        limit = 50
+                        limit = 3
                     }
 
                     val sendData = if (limit <= 0) listOf() else retrieveNewTriggers(limit, identity)
