@@ -189,7 +189,7 @@ fun main() {
                         limit = 3
                     }
 
-                    val sendData = if (limit <= 0) listOf() else retrieveNewTriggers(limit)
+                    val sendData = if (limit <= 0) listOf() else retrieveNewTriggers(limit, false)
 
                     ctx.json(mapOf(
                         "data" to sendData

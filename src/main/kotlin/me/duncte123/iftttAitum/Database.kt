@@ -24,6 +24,7 @@ import com.mongodb.client.MongoClients
 import com.mongodb.client.MongoDatabase
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
+import com.mongodb.client.model.Sorts
 import org.bson.Document
 import com.mongodb.client.model.Filters.`in` as filterIn
 import org.bson.codecs.configuration.CodecRegistries.fromProviders
@@ -70,7 +71,9 @@ fun insertTrigger(triggerData: TriggerData) {
 
 fun retrieveNewTriggers(limit: Int, delete: Boolean = true): List<TriggerData> {
     val triggers = mongoDb.getCollection("triggers", TriggerData::class.java)
-    val foundTriggers = triggers.find().limit(limit)
+    val foundTriggers = triggers.find()
+        .sort(Sorts.descending("createdAt"))
+        .limit(limit)
     val collected = foundTriggers.toList()
 
     if (delete) {
