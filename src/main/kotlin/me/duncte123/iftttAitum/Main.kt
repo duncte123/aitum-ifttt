@@ -129,7 +129,9 @@ fun main() {
 
                 insertTrigger(dbData)
 
-                ctx.json(testData)
+                ctx.json(mapOf(
+                    "data" to testData
+                ))
             }
             // eg app_trigger
             path("triggers/{trigger}") {
