@@ -19,7 +19,6 @@
 
 package me.duncte123.iftttAitum
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.*
@@ -30,13 +29,51 @@ import me.duncte123.iftttAitum.ifttt.TestData
 import me.duncte123.iftttAitum.ifttt.TriggerRequestBody
 import java.time.LocalDateTime
 
+fun createEnoughTestItems(testData: TestData) {
+    (0..3).forEach { _ ->
+        val dbData = TriggerData(
+            testData.samples.triggers.app_trigger.trigger_identifier,
+            "",
+            LocalDateTime.now(),
+            MetaData()
+        )
+
+        insertTrigger(dbData)
+
+        val dbData2 = TriggerData(
+            testData.samples.triggers.app_trigger.trigger_identifier,
+            "I like trains",
+            LocalDateTime.now(),
+            MetaData()
+        )
+
+        insertTrigger(dbData2)
+
+        val dbData3 = TriggerData(
+            testData.samples.triggers.app_trigger.trigger_identifier,
+            """{"cheese": true}""",
+            LocalDateTime.now(),
+            MetaData()
+        )
+
+        insertTrigger(dbData3)
+    }
+
+    val finaltrigger = TriggerData(
+        testData.samples.triggers.app_trigger.trigger_identifier,
+        """{"final_trigger": true}""",
+        LocalDateTime.now(),
+        MetaData()
+    )
+
+    insertTrigger(finaltrigger)
+}
+
 // TODO:
 //  - Figure out how to use ingredients
 //  - Map user identifiers to received trigger_identity so we can send out real-time updates
 fun main() {
-    val app = Javalin.create { config ->
-        //
-    }.start(8080)
+    val app = Javalin.create().start(8080)
 
     app.exception(HttpResponseException::class.java) { ex, ctx ->
         ctx.status(ex.status)
@@ -120,32 +157,7 @@ fun main() {
             post("test/setup") { ctx ->
                 val testData = TestData()
 
-                val dbData = TriggerData(
-                    testData.samples.triggers.app_trigger.trigger_identifier,
-                    "",
-                    LocalDateTime.now(),
-                    MetaData()
-                )
-
-                insertTrigger(dbData)
-
-                val dbData2 = TriggerData(
-                    testData.samples.triggers.app_trigger.trigger_identifier,
-                    "I like trains",
-                    LocalDateTime.now(),
-                    MetaData()
-                )
-
-                insertTrigger(dbData2)
-
-                val dbData3 = TriggerData(
-                    testData.samples.triggers.app_trigger.trigger_identifier,
-                    """{"cheese": true}""",
-                    LocalDateTime.now(),
-                    MetaData()
-                )
-
-                insertTrigger(dbData3)
+                createEnoughTestItems(testData)
 
                 ctx.json(mapOf(
                     "data" to testData
